@@ -1,0 +1,89 @@
+name: Production Build and deploy ami
+
+on:
+  push:
+    branches:
+      - production
+
+env:
+  PACKER_VERSION: "1.10.3"
+
+jobs:
+
+  build-image:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: ${{ secrets.PROD_AWS_REGION }}
+        aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+
+    - name: Install Packer
+      uses: hashicorp/setup-packer@v2
+      with:
+        version: ${{ env.PACKER_VERSION }}
+
+    - name: Verify Packer Installation
+      run: packer --version
+
+    - name: Initialize Packer
+      run: packer init . 
+      working-directory: ./packer/ 
+
+    - name: Validate Packer Configuration
+      run: packer validate  -var-file=production.vars.hcl .
+      working-directory: ./packer/
+
+    - name: Build Machine Image with Packer
+      run: packer build -var-file=production.vars.hcl .
+      working-directory: ./packer/
+
+  deploy-image:
+
+    runs-on: ubuntu-latest
+    needs: build-image
+
+    steps:
+
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: ${{ secrets.PROD_AWS_REGION }}
+        aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+        
+
+    - name: Terraform Installation
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.8.4
+
+    - name: Verify Terraform Installation
+      run: terraform --version
+
+    - name: Initialize Terraform
+      run: terraform init  --backend-config=production-backend.conf 
+      working-directory: ./terraform/
+
+    - name: Validate Terraform Configuration
+      run: terraform validate
+      working-directory: ./terraform/
+
+    - name: Formating Terraform Code
+      run: terraform fmt 
+      working-directory: ./terraform/
+
+    - name: Apply Terraform Code
+      run: terraform apply -var-file=production.tfvars  -auto-approve 
+      working-directory: ./terraform/

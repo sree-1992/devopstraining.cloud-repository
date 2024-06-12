@@ -1,0 +1,5 @@
+application_repository = "https://github.com/Fujikomalan/trainingdevops.cloud-repository"
+project_name           = "trainingdevops"
+project_env            = "production"
+ami                    = "ami-0cc9838aa7ab1dce7"
+instance_type          = "t2.micro"
