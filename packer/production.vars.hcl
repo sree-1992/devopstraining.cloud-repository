@@ -1,4 +1,4 @@
-application_repository = "https://github.com/sree-1992/trainingdevops.cloud-repository.git"
+application_repository = "https://github.com/sree-1992/devopstraining.cloud-repository.git"
 project_name           = "trainingdevops"
 project_env            = "production"
 ami                    = "ami-013168dc3850ef002"
